@@ -7,13 +7,27 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
 # Create paths that work from the main project folder
 PROJECT_FOLDER = Path(__file__).resolve().parent.parent
 DATA_FOLDER = PROJECT_FOLDER / "data"
+RESULTS_FOLDER = PROJECT_FOLDER / "results"
 
 ORIGINAL_DATA = DATA_FOLDER / "employee_attrition.csv"
 PREPROCESSED_DATA = DATA_FOLDER / "preprocessed_employee_attrition.csv"
+MODEL_RESULTS = RESULTS_FOLDER / "model_results.txt"
+CONFUSION_MATRIX_IMAGE = RESULTS_FOLDER / "confusion_matrix.png"
 
 
 def preprocess_data():
@@ -134,6 +148,71 @@ def train_model(model, features, target):
 
     return model, X_train, X_test, y_train, y_test
 
+def evaluate_model(model, X_test, y_test):
+    """Evaluate the trained model using classification metrics."""
+
+    RESULTS_FOLDER.mkdir(exist_ok=True)
+
+    # Predict attrition for the testing records
+    predictions = model.predict(X_test)
+
+    # Calculate classification metrics
+    accuracy = accuracy_score(y_test, predictions)
+    precision = precision_score(y_test, predictions, zero_division=0)
+    recall = recall_score(y_test, predictions, zero_division=0)
+    f1 = f1_score(y_test, predictions, zero_division=0)
+
+    report = classification_report(
+        y_test,
+        predictions,
+        target_names=["Stayed", "Left"],
+        zero_division=0,
+    )
+
+    print("\nModel Evaluation")
+    print("----------------")
+    print(f"Accuracy:  {accuracy:.2%}")
+    print(f"Precision: {precision:.2%}")
+    print(f"Recall:    {recall:.2%}")
+    print(f"F1 score:  {f1:.2%}")
+    print("\nClassification Report:")
+    print(report)
+
+    # Save the evaluation results to a text file
+    with open(MODEL_RESULTS, "w", encoding="utf-8") as results_file:
+        results_file.write("Employee Attrition Model Results\n")
+        results_file.write("--------------------------------\n")
+        results_file.write(f"Accuracy: {accuracy:.4f}\n")
+        results_file.write(f"Precision: {precision:.4f}\n")
+        results_file.write(f"Recall: {recall:.4f}\n")
+        results_file.write(f"F1 score: {f1:.4f}\n\n")
+        results_file.write("Classification Report\n")
+        results_file.write(report)
+
+    # Create and save the confusion matrix
+    matrix = confusion_matrix(y_test, predictions)
+
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(
+        matrix,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Stayed", "Left"],
+        yticklabels=["Stayed", "Left"],
+    )
+    plt.title("Employee Attrition Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.tight_layout()
+    plt.savefig(CONFUSION_MATRIX_IMAGE, dpi=300)
+    plt.close()
+
+    print("Model results saved to:", MODEL_RESULTS)
+    print("Confusion matrix saved to:", CONFUSION_MATRIX_IMAGE)
+
+    return accuracy, precision, recall, f1
+
 if __name__ == "__main__":
     processed_data = preprocess_data()
     attrition_model, X, y = build_model(processed_data)
@@ -145,3 +224,9 @@ if __name__ == "__main__":
         y_train,
         y_test,
     ) = train_model(attrition_model, X, y)
+
+    evaluation_results = evaluate_model(
+        trained_model,
+        X_test,
+        y_test,
+    )

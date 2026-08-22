@@ -1,0 +1,16 @@
+Employee Attrition Model Results
+--------------------------------
+Accuracy: 0.8367
+Precision: 0.4857
+Recall: 0.3617
+F1 score: 0.4146
+
+Classification Report
+              precision    recall  f1-score   support
+
+      Stayed       0.88      0.93      0.91       247
+        Left       0.49      0.36      0.41        47
+
+    accuracy                           0.84       294
+   macro avg       0.68      0.64      0.66       294
+weighted avg       0.82      0.84      0.83       294
