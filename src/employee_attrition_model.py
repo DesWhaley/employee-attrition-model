@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
 
 # Create paths that work from the main project folder
 PROJECT_FOLDER = Path(__file__).resolve().parent.parent
@@ -112,7 +113,35 @@ def build_model(employee_data):
 
     return model, features, target
 
+def train_model(model, features, target):
+    """Split the dataset and train the Random Forest model."""
+
+    # Reserve 20% of the records for final testing
+    X_train, X_test, y_train, y_test = train_test_split(
+        features,
+        target,
+        test_size=0.20,
+        random_state=42,
+        stratify=target,
+    )
+
+    # Train the complete preprocessing and classification pipeline
+    model.fit(X_train, y_train)
+
+    print("\nRandom Forest model successfully trained.")
+    print("Training records:", len(X_train))
+    print("Testing records:", len(X_test))
+
+    return model, X_train, X_test, y_train, y_test
 
 if __name__ == "__main__":
     processed_data = preprocess_data()
     attrition_model, X, y = build_model(processed_data)
+
+    (
+        trained_model,
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+    ) = train_model(attrition_model, X, y)
