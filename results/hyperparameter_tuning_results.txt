@@ -1,0 +1,8 @@
+Hyperparameter Tuning Results
+-----------------------------
+Best parameters: {'classifier__class_weight': 'balanced', 'classifier__max_depth': 4, 'classifier__min_samples_leaf': 1, 'classifier__n_estimators': 200}
+Best cross-validation recall: 0.6000
+Optimized accuracy: 0.7857
+Optimized precision: 0.3947
+Optimized recall: 0.6383
+Optimized F1 score: 0.4878

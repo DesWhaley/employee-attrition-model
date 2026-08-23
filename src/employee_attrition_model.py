@@ -6,14 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import (
-    StratifiedKFold,
-    cross_validate,
-    train_test_split,
-)
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -21,6 +15,12 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
+)
+from sklearn.model_selection import (
+    GridSearchCV,
+    StratifiedKFold,
+    cross_validate,
+    train_test_split,
 )
 
 # Create paths that work from the main project folder
@@ -33,6 +33,8 @@ PREPROCESSED_DATA = DATA_FOLDER / "preprocessed_employee_attrition.csv"
 MODEL_RESULTS = RESULTS_FOLDER / "model_results.txt"
 CONFUSION_MATRIX_IMAGE = RESULTS_FOLDER / "confusion_matrix.png"
 CROSS_VALIDATION_RESULTS = RESULTS_FOLDER / "cross_validation_results.txt"
+TUNING_RESULTS = RESULTS_FOLDER / "hyperparameter_tuning_results.txt"
+OPTIMIZED_MATRIX_IMAGE = RESULTS_FOLDER / "optimized_confusion_matrix.png"
 
 def preprocess_data():
     """Load, inspect, clean, and save the employee attrition dataset."""
@@ -207,6 +209,7 @@ def apply_cross_validation(model, X_train, y_train):
         CROSS_VALIDATION_RESULTS,
     )
 
+
     return scores
 
 def evaluate_model(model, X_test, y_test):
@@ -274,6 +277,127 @@ def evaluate_model(model, X_test, y_test):
 
     return accuracy, precision, recall, f1
 
+def tune_model(model, X_train, y_train, X_test, y_test):
+    """Tune Random Forest hyperparameters using GridSearchCV."""
+
+    RESULTS_FOLDER.mkdir(exist_ok=True)
+
+    parameter_grid = {
+        "classifier__n_estimators": [100, 200],
+        "classifier__max_depth": [4, 6, 8, None],
+        "classifier__min_samples_leaf": [1, 3, 5],
+        "classifier__class_weight": [
+            "balanced",
+            {0: 1, 1: 2},
+            {0: 1, 1: 3},
+            {0: 1, 1: 4},
+        ],
+    }
+
+    cross_validation = StratifiedKFold(
+        n_splits=5,
+        shuffle=True,
+        random_state=42,
+    )
+
+    grid_search = GridSearchCV(
+        estimator=model,
+        param_grid=parameter_grid,
+        scoring="recall",
+        cv=cross_validation,
+        n_jobs=-1,
+    )
+
+    print("\nStarting hyperparameter tuning...")
+    grid_search.fit(X_train, y_train)
+
+    optimized_model = grid_search.best_estimator_
+    optimized_predictions = optimized_model.predict(X_test)
+
+    optimized_accuracy = accuracy_score(
+        y_test,
+        optimized_predictions,
+    )
+    optimized_precision = precision_score(
+        y_test,
+        optimized_predictions,
+        zero_division=0,
+    )
+    optimized_recall = recall_score(
+        y_test,
+        optimized_predictions,
+        zero_division=0,
+    )
+    optimized_f1 = f1_score(
+        y_test,
+        optimized_predictions,
+        zero_division=0,
+    )
+
+    print("\nHyperparameter Tuning Results")
+    print("-----------------------------")
+    print("Best parameters:", grid_search.best_params_)
+    print(
+        f"Best cross-validation recall: "
+        f"{grid_search.best_score_:.2%}"
+    )
+    print(f"Optimized accuracy:  {optimized_accuracy:.2%}")
+    print(f"Optimized precision: {optimized_precision:.2%}")
+    print(f"Optimized recall:    {optimized_recall:.2%}")
+    print(f"Optimized F1 score:  {optimized_f1:.2%}")
+
+    with open(TUNING_RESULTS, "w", encoding="utf-8") as results_file:
+        results_file.write("Hyperparameter Tuning Results\n")
+        results_file.write("-----------------------------\n")
+        results_file.write(
+            f"Best parameters: {grid_search.best_params_}\n"
+        )
+        results_file.write(
+            f"Best cross-validation recall: "
+            f"{grid_search.best_score_:.4f}\n"
+        )
+        results_file.write(
+            f"Optimized accuracy: {optimized_accuracy:.4f}\n"
+        )
+        results_file.write(
+            f"Optimized precision: {optimized_precision:.4f}\n"
+        )
+        results_file.write(
+            f"Optimized recall: {optimized_recall:.4f}\n"
+        )
+        results_file.write(
+            f"Optimized F1 score: {optimized_f1:.4f}\n"
+        )
+
+    optimized_matrix = confusion_matrix(
+        y_test,
+        optimized_predictions,
+    )
+
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(
+        optimized_matrix,
+        annot=True,
+        fmt="d",
+        cmap="Greens",
+        xticklabels=["Stayed", "Left"],
+        yticklabels=["Stayed", "Left"],
+    )
+    plt.title("Optimized Employee Attrition Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.tight_layout()
+    plt.savefig(OPTIMIZED_MATRIX_IMAGE, dpi=300)
+    plt.close()
+
+    print("Tuning results saved to:", TUNING_RESULTS)
+    print(
+        "Optimized confusion matrix saved to:",
+        OPTIMIZED_MATRIX_IMAGE,
+    )
+
+    return optimized_model, grid_search
+
 if __name__ == "__main__":
     processed_data = preprocess_data()
     attrition_model, X, y = build_model(processed_data)
@@ -298,4 +422,11 @@ if __name__ == "__main__":
         y_test,
     )
 
+    optimized_model, tuning_search = tune_model(
+        attrition_model,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+    )
     
