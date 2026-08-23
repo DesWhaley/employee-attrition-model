@@ -6,7 +6,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import (
+    StratifiedKFold,
+    cross_validate,
+    train_test_split,
+)
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -28,7 +32,7 @@ ORIGINAL_DATA = DATA_FOLDER / "employee_attrition.csv"
 PREPROCESSED_DATA = DATA_FOLDER / "preprocessed_employee_attrition.csv"
 MODEL_RESULTS = RESULTS_FOLDER / "model_results.txt"
 CONFUSION_MATRIX_IMAGE = RESULTS_FOLDER / "confusion_matrix.png"
-
+CROSS_VALIDATION_RESULTS = RESULTS_FOLDER / "cross_validation_results.txt"
 
 def preprocess_data():
     """Load, inspect, clean, and save the employee attrition dataset."""
@@ -148,6 +152,63 @@ def train_model(model, features, target):
 
     return model, X_train, X_test, y_train, y_test
 
+def apply_cross_validation(model, X_train, y_train):
+    """Evaluate the model with five-fold stratified cross-validation."""
+
+    RESULTS_FOLDER.mkdir(exist_ok=True)
+
+    cross_validation = StratifiedKFold(
+        n_splits=5,
+        shuffle=True,
+        random_state=42,
+    )
+
+    scoring_metrics = {
+        "accuracy": "accuracy",
+        "precision": "precision",
+        "recall": "recall",
+        "f1": "f1",
+    }
+
+    scores = cross_validate(
+        model,
+        X_train,
+        y_train,
+        cv=cross_validation,
+        scoring=scoring_metrics,
+    )
+
+    accuracy_mean = scores["test_accuracy"].mean()
+    precision_mean = scores["test_precision"].mean()
+    recall_mean = scores["test_recall"].mean()
+    f1_mean = scores["test_f1"].mean()
+
+    print("\nFive-Fold Cross-Validation")
+    print("--------------------------")
+    print(f"Average accuracy:  {accuracy_mean:.2%}")
+    print(f"Average precision: {precision_mean:.2%}")
+    print(f"Average recall:    {recall_mean:.2%}")
+    print(f"Average F1 score:  {f1_mean:.2%}")
+
+    with open(
+        CROSS_VALIDATION_RESULTS,
+        "w",
+        encoding="utf-8",
+    ) as results_file:
+        results_file.write("Five-Fold Cross-Validation Results\n")
+        results_file.write("----------------------------------\n")
+        results_file.write(f"Average accuracy: {accuracy_mean:.4f}\n")
+        results_file.write(f"Average precision: {precision_mean:.4f}\n")
+        results_file.write(f"Average recall: {recall_mean:.4f}\n")
+        results_file.write(f"Average F1 score: {f1_mean:.4f}\n")
+
+    print(
+        "Cross-validation results saved to:",
+        CROSS_VALIDATION_RESULTS,
+    )
+
+    return scores
+
 def evaluate_model(model, X_test, y_test):
     """Evaluate the trained model using classification metrics."""
 
@@ -225,8 +286,16 @@ if __name__ == "__main__":
         y_test,
     ) = train_model(attrition_model, X, y)
 
+    cross_validation_scores = apply_cross_validation(
+        attrition_model,
+        X_train,
+        y_train,
+    )
+
     evaluation_results = evaluate_model(
         trained_model,
         X_test,
         y_test,
     )
+
+    
