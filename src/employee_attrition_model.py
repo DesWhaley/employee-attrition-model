@@ -1,11 +1,14 @@
 from pathlib import Path
-
 import pandas as pd
+
+# sklearn imports
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+# evaluation
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (
@@ -49,7 +52,7 @@ def preprocess_data():
     # Remove duplicate rows, if any
     employee_data = employee_data.drop_duplicates()
 
-    # Remove columns that do not provide useful predictive information
+    # Remove columns that won't help predict whether an employee leaves
     columns_to_remove = [
         "EmployeeCount",
         "EmployeeNumber",
@@ -59,7 +62,7 @@ def preprocess_data():
 
     employee_data = employee_data.drop(columns=columns_to_remove)
 
-    # Convert the target variable from Yes/No to 1/0
+    # Change the attrition values from Yes/No to 1/0
     employee_data["Attrition"] = employee_data["Attrition"].map(
         {"Yes": 1, "No": 0}
     )
@@ -75,7 +78,7 @@ def preprocess_data():
 def build_model(employee_data):
     """Build the preprocessing pipeline and Random Forest classifier."""
 
-    # Separate the predictors from the target
+    # Separate the employee information from the attrition column
     features = employee_data.drop(columns="Attrition")
     target = employee_data["Attrition"]
 
