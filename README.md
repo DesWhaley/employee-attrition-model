@@ -4,12 +4,6 @@
 
 ## D683 – ADVANCED AI AND ML
 
-**DO NOT DISTRIBUTE OR PUBLICLY POST SOLUTIONS TO THESE LABS. MAKE ALL FORKS OF THIS REPOSITORY WITH SOLUTION CODE PRIVATE. PLEASE REFER TO THE STUDENT CODE OF CONDUCT AND ETHICAL EXPECTATIONS FOR COLLEGE OF INFORMATION TECHNOLOGY STUDENTS FOR SPECIFICS.**
-
-# WESTERN GOVERNORS UNIVERSITY
-
-## D683 – ADVANCED AI AND ML
-
 # Employee Attrition Prediction Product
 
 ## Project Overview
@@ -142,7 +136,7 @@ The model did not meet the project goal of **85% accuracy and 80% recall**. Tuni
 ## Software Requirements
 
 - **Windows 11** for the steps below
-- **Python 3.10 or later**, with package versions that support it
+- **Python 3.13.2** (used to build and run this project)
 - **Visual Studio Code**
 - **Git**
 - Internet access to download files and packages
